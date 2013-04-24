@@ -1,7 +1,7 @@
 Militi A
 ========
 
-Am Age of Empires AI that aims to overwhelm its opponnents by sending an ever increasing number of milita men (and only milita men). Never stopping villager production, all resources are put towards building militiamen and the necessary structures.
+An Age of Empires AI that aims to overwhelm its opponnents by sending an ever increasing number of milita men (and only milita men). Never stopping villager production, all resources are put towards building militiamen and the necessary structures.
 
 http://steamcommunity.com/sharedfiles/filedetails/?id=139851177
 
