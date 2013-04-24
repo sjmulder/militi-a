@@ -1,0 +1,195 @@
+; # Militi A
+;
+; This AI aims to overwhelm its opponnents by sending an ever increasing
+; number of milita men (and only milita men). Never stopping villager
+; production, all resources are put towards building militiamen and the
+; necessary structures.
+;
+; ## Constants
+;
+; We never want to be population blocked, so make sure we have at least this
+; much headroom.
+
+(defconst min-headroom 3)
+
+; Attack as soon as we have a solider. Note that the initial scount also counts
+; for one, so we attack as soon as the army size is two.
+
+(defconst attack-army-size 2)
+
+; We'll be building new lumber and mining camps whenever the resources are too
+; far away.
+
+(defconst max-wood-distance 5)
+(defconst max-gold-distance 7)
+
+; ## Game rules
+;
+; Basic build order:
+;
+;  1. Villager (continuously)
+;  2. House
+;  3. Barracks
+;  4. Militiaman (coninuously)
+;  5. Mill
+;
+; From there on:
+;
+;  * Houses as needed
+;  * Lumber camps as needed
+;  * Gold mining camps as needed
+;  * New barracks whenever all existing barracks have a militiaman queued up.
+
+(defrule
+	(true)
+	=>
+
+; Taunt the player!
+
+	(chat-to-all "Good day, dear sir!")
+
+; We need to do some initial exploring ot find the nearby resources. The scout
+; alone is not enough so also send out one village explorer.
+
+	(set-strategic-number sn-cap-civilian-explorers 1)
+
+; Dedicate most soldiers to attack, we want to win by continously raiding the
+; opponent's base, not by defending our own. We do still need some to explore.
+
+	(set-strategic-number sn-percent-attack-soldiers 80)
+
+; Devote all our non-explorer villagers to gathering food.
+
+	(set-strategic-number sn-food-gatherer-percentage 100)
+	(disable-self))
+
+; Our number one rule is to never stop building villagers until the game can
+; handle no more (at 100 pop). The more villagers we have, the more resources
+; we get and the more militiamen we can pump out.
+
+(defrule
+	(unit-type-count villager < 100)
+	(can-train villager)
+	=>
+	(train villager))
+
+; But always make sure we have enough houses.
+
+(defrule
+	(housing-headroom < min-headroom)
+	(can-build house)
+	=>
+	(build house))
+
+; As soon as we have the first house we can put some people on wood, which we
+; will need to build our barracks.
+
+(defrule
+	(building-type-count house >= 1)
+	=>
+	(set-strategic-number sn-wood-gatherer-percentage 50)
+	(set-strategic-number sn-food-gatherer-percentage 50)
+	(disable-self))
+
+; Build a barracks as soon as possible. After the first barracks, we want to
+; build a new one whenever we have the resources to train a new militiaman but
+; no available barracks to train at.
+
+(defrule
+	(housing-headroom >= min-headroom)
+	(can-build barracks)
+	(or (building-type-count barracks == 0)
+	    (and (can-afford-unit militiaman)
+	    	 (not (can-train militiaman))))
+	=>
+	(build barracks))
+
+; After building our first barracks we will need collecting gold to train
+; militiamen.
+
+(defrule
+	(building-type-count barracks >= 1)
+	=>
+	(set-strategic-number sn-wood-gatherer-percentage 40)
+	(set-strategic-number sn-food-gatherer-percentage 40)
+	(set-strategic-number sn-gold-gatherer-percentage 20)
+	(disable-self))
+
+; Train militiamen continuously.
+
+(defrule
+	(can-train militiaman)
+	=>
+	(train militiaman))
+
+; After our first barracks is up we can focus on our economy for a bit. Build
+; a mill as soon as we find the berries. 
+
+(defrule
+	(building-type-count barracks >= 1)
+	(building-type-count mill == 0)
+	(housing-headroom >= min-headroom)
+	(resource-found food)
+	(can-build mill)
+	=>
+	(build mill))
+
+; Food is the most important resource for building militiamen. Continuously
+; build farms so we can build as many militiamen as possible.
+
+(defrule
+	(sheep-and-forage-too-far)
+	(can-build farm)
+	=>
+	(build farm))
+
+; Build lumber camps when we find wood or when we have chopped to deep into the
+; forst and the camp is too far off.
+
+(defrule
+	(building-type-count mill >= 1)
+	(housing-headroom >= min-headroom)
+	(or (building-type-count lumber-camp < 1)
+		(dropsite-min-distance wood > max-wood-distance))
+	(resource-found wood)
+	(can-build lumber-camp)
+	=>
+	(build lumber-camp))
+
+; Likewise, build mining camps as needed.
+
+(defrule
+	(building-type-count barracks >= 1)
+	(housing-headroom >= min-headroom)
+	(or (building-type-count mining-camp < 1)
+		(dropsite-min-distance gold > max-gold-distance))
+	(resource-found gold)
+	(can-build mining-camp)
+	=>
+	(build mining-camp))
+
+; When we are ready to attack, taunt the player.
+
+(defrule
+	(soldier-count >= attack-army-size)
+	=>
+	(chat-to-all "It's time for a little paw-paw!")
+	(disable-self))
+
+; ...and actually attack.
+
+(defrule
+	(soldier-count >= attack-army-size)
+	=>
+	(attack-now))
+
+; ## Resigning
+;
+; We can't recover from a destroyed town center, so if that happens and we have
+; no military units left, resign.
+
+(defrule
+	(building-type-count town-center == 0)
+	(soldier-count == 0)
+	=>
+	(chat-to-all "My villagers got bored and started playing MOBA games."))
