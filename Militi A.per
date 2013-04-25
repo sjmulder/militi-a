@@ -1,11 +1,24 @@
-; # Militi A
+; Militi A
+; ========
 ;
 ; This AI aims to overwhelm its opponnents by sending an ever increasing
 ; number of milita men (and only milita men). Never stopping villager
 ; production, all resources are put towards building militiamen and the
 ; necessary structures.
 ;
-; ## Constants
+; http://steamcommunity.com/sharedfiles/filedetails/?id=139851177
+;
+; Installation Instructions
+; -------------------------
+;
+; Place `Militi A.ai` and `Milti A.per` in the `AI` directory within the Age of
+; Empires 2 installation directory. When using Steam, Age of Empires is
+; installed in `%ProgramFiles%\Steam\SteamApps\common\Age2HD`.
+;
+; Annotated Code
+; --------------
+;
+; ### Constants
 ;
 ; We never want to be population blocked, so make sure we have at least this
 ; much headroom.
@@ -23,7 +36,7 @@
 (defconst max-wood-distance 5)
 (defconst max-gold-distance 7)
 
-; ## Game rules
+; ### Game rules
 ;
 ; Basic build order:
 ;
@@ -39,6 +52,8 @@
 ;  * Lumber camps as needed
 ;  * Gold mining camps as needed
 ;  * New barracks whenever all existing barracks have a militiaman queued up.
+;
+; <b></b>
 
 (defrule
 	(true)
@@ -123,7 +138,7 @@
 	(train militiaman))
 
 ; After our first barracks is up we can focus on our economy for a bit. Build
-; a mill as soon as we find the berries. 
+; a mill as soon as we find the berries.
 
 (defrule
 	(building-type-count barracks >= 1)
@@ -183,7 +198,7 @@
 	=>
 	(attack-now))
 
-; ## Resigning
+; ### Resigning
 ;
 ; We can't recover from a destroyed town center, so if that happens and we have
 ; no military units left, resign.
